@@ -1,7 +1,8 @@
-#! /usr/bin/perl
+#!/usr/bin/env perl
 use strict;
 use warnings;
 
+use v5.10;
 use Getopt::Long;
 use Digest::MD5;
 
@@ -23,7 +24,7 @@ sub md5_string
     $hasher->add($_);
 
     #print hex digest and clear for next $val
-    print "$_ => ", $hasher->hexdigest, "\n";
+    say "$_ => ", $hasher->hexdigest;
   }
 }
 
@@ -53,14 +54,14 @@ sub md5_file
   {
     if (!open(my $file, "<", $_))
     {
-      print "$_ => Error opening file\n";
+      say "$_ => Error opening file";
     }
     else
     {
       $hasher->addfile($file);
 
       #print hex digest and clear for next $val
-      print "$_ => ", $hasher->hexdigest, "\n";
+      say "$_ => ", $hasher->hexdigest;
     }
   }
   select *STDOUT;
