@@ -71,7 +71,7 @@ if (@ARGV > 0)
 {
   if ($output && !$file)
   {
-    die "--output must be used with --file";
+    die "--output must be used with --file\n";
   }
 
   if ($file)
