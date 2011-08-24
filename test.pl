@@ -89,11 +89,12 @@ sub test3
     ok($? != -1, "Output to file successful");
 
     #Check File exists
-    ok(open(my $fh, '<', $CHECKSUM_FILE), "File Exists");
+    ok(-e $CHECKSUM_FILE, "File Exists");
 
     #Split 'checksums.md5' into hash of filenames => md5sum
+    open my $fh, '<', $CHECKSUM_FILE;
+    ok($fh, "File handle opened");
     my %results;
-
     while (<$fh>)
     {
         if (!/^#/)    #Only check if line does NOT start with #
