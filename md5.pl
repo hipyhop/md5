@@ -10,6 +10,8 @@ use Digest::MD5;
 my $file   = 0;
 my $output = '';
 
+my $output_file = 'checksums.md5';
+
 GetOptions(
            "file|f"   => \$file,
            "output|o" => \$output
@@ -22,11 +24,11 @@ if (@ARGV > 0)
 
     if ($file)
     {
-        md5_file(@ARGV);
+        md5_files(@ARGV);
     }
     else
     {
-        md5_string(@ARGV);
+        md5_strings(@ARGV);
     }
 }
 else
@@ -35,7 +37,7 @@ else
 }
 
 #Digest multiple strings
-sub md5_string
+sub md5_strings
 {
     my @strings = @_;
     my $hasher  = Digest::MD5->new;
@@ -51,14 +53,14 @@ sub md5_string
 }
 
 #Digest multiple files
-sub md5_file
+sub md5_files
 {
     my @filenames = @_;
     my $hasher    = Digest::MD5->new;
 
     if ($output)
     {
-        if (open(my $OUTH, '>', 'checksums.md5'))
+        if (!-e $output_file && open(my $OUTH, '>', $output_file))
         {
             select $OUTH;
             printf(
@@ -69,7 +71,7 @@ sub md5_file
         }
         else
         {
-            warn "Could not open 'checksums.md5' for output\n";
+            warn "Could not open '$output_file' for output: $!\n";
         }
     }
 
@@ -88,6 +90,6 @@ sub md5_file
             say "$_ => ", $hasher->hexdigest;
         }
     }
-    close $OUTH select *STDOUT;
+    select *STDOUT;
     return 1;
 }
