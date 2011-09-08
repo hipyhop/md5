@@ -6,23 +6,35 @@ use 5.010;
 use Getopt::Long;
 use Digest::MD5;
 
-#Determine if digesting files or strings
-my $file   = 0;
-my $output = '';
+our $VERSION = 0.11;
+
+#flags
+my $file; 
+my $output;
+my $verify;
+my $help;
 
 my $output_file = 'checksums.md5';
 
 GetOptions(
+           "verify|v" => \$verify,
            "file|f"   => \$file,
-           "output|o" => \$output
+           "output|o" => \$output,
+           "help|h" => \$help,
           ) or die "Error reading arguments\n";
+
+help() && exit 255 if $help;
 
 # Main program
 if (@ARGV > 0)
 {
     die "--output must be used with --file\n" if ($output && !$file);
 
-    if ($file)
+    if($verify)
+    {
+        verify(@ARGV)
+    }
+    elsif ($file)
     {
         md5_files(@ARGV);
     }
@@ -33,7 +45,8 @@ if (@ARGV > 0)
 }
 else
 {
-    die "Usage: $0 string OR $0 -f filename\n";
+    help();
+    exit 255;
 }
 
 #Digest multiple strings
@@ -77,19 +90,58 @@ sub md5_files
 
     foreach (@filenames)
     {
-        if (!open(my $FH, "<", $_))
-        {
-            say "$_ => Error opening file";
-        }
-        else
-        {
-            $hasher->addfile($FH);
-            close $FH;
-
-            #print hex digest and clear for next $val
-            say "$_ => ", $hasher->hexdigest;
-        }
+        say "$_ => ", md5_file($_);
     }
     select *STDOUT;
     return 1;
+}
+
+sub md5_file
+{
+    my ($file, $return) = @_;
+    if (!open(my $FH, "<", $file))
+    {
+            $return = "Error opening file";
+    }
+    else
+    {
+     $return = Digest::MD5->new->addfile($FH)->hexdigest;
+     close $FH;
+    }
+    return $return;
+}
+
+sub verify
+{
+    my $seperator = '=>';
+    while(my $line = <>)
+    {
+       chomp $line;
+       next if($line =~ /^#/); #Skip lines with comments
+
+       my ($filename, $checksum) = split $line, $seperator;
+
+       $checksum =~ s/ //g; #Remove any spaces from checksum string
+       $filename =~ s/(.+) *$/$1/; #Remove any trailing spaces from filename
+
+
+       say $line;
+    }
+}
+
+sub help
+{
+    printf << "HELP", $VERSION 
+File and string checksum MD5 digester / verifier v%f
+    $0 [OPTIONS] string1, string2, ...
+    $0 -f [-o] file1, file2, ...
+    $0 -v checksum_file1, [checksum_file2, ...]
+
+Options:
+    -f, --file        Digest files instead of strings
+    -v, --verify      Verifies checksum file(s) in 'filename => checksum' format
+    -o, --output      Outputs checksums to 'checksums.md5', must be used with -f
+    -h, --help        Displays this message
+
+HELP
 }
