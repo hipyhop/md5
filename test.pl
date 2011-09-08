@@ -97,10 +97,10 @@ sub test3
     my %results;
     while (<$fh>)
     {
+        chomp;
         if (!/^#/)    #Only check if line does NOT start with #
         {
             my ($filename, $checksum) = split(/$CHECKSUM_FILE_SEPERATOR/);
-            $checksum =~ s/\n//g;    #Remove any new lines
             $results{$filename} = $checksum;
         }
     }
