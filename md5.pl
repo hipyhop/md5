@@ -9,7 +9,7 @@ use Digest::MD5;
 our $VERSION = 0.11;
 
 #flags
-my $file; 
+my $file;
 my $output;
 my $verify;
 my $help;
@@ -20,7 +20,7 @@ GetOptions(
            "verify|v" => \$verify,
            "file|f"   => \$file,
            "output|o" => \$output,
-           "help|h" => \$help,
+           "help|h"   => \$help,
           ) or die "Error reading arguments\n";
 
 help() && exit 255 if $help;
@@ -30,9 +30,9 @@ if (@ARGV > 0)
 {
     die "--output must be used with --file\n" if ($output && !$file);
 
-    if($verify)
+    if ($verify)
     {
-        verify(@ARGV)
+        verify(@ARGV);
     }
     elsif ($file)
     {
@@ -101,12 +101,12 @@ sub md5_file
     my ($file, $return) = @_;
     if (!open(my $FH, "<", $file))
     {
-            $return = "Error opening file";
+        $return = "Error opening file";
     }
     else
     {
-     $return = Digest::MD5->new->addfile($FH)->hexdigest;
-     close $FH;
+        $return = Digest::MD5->new->addfile($FH)->hexdigest;
+        close $FH;
     }
     return $return;
 }
@@ -114,24 +114,27 @@ sub md5_file
 sub verify
 {
     my $seperator = '=>';
-    while(my $line = <>)
+    while (my $line = <>)
     {
-       chomp $line;
-       next if($line =~ /^#/); #Skip lines with comments
+        chomp $line;
+        next if ($line =~ /^#/);    #Skip lines with comments
 
-       my ($filename, $checksum) = split $line, $seperator;
+        my ($filename, $checksum) = split /$seperator/, $line;
 
-       $checksum =~ s/ //g; #Remove any spaces from checksum string
-       $filename =~ s/(.+) *$/$1/; #Remove any trailing spaces from filename
+        $checksum =~ s/ //g;        #Remove any spaces from checksum string
+        $filename =~ s/\s*$//;      #Remove any trailing spaces from filename
 
-
-       say $line;
+        print "Checking '$filename' ... ";
+        my $result = md5_file($filename);
+        say $result eq $checksum
+          ? '[OK]'
+          : "[FAIL] expected $checksum got $result";
     }
 }
 
 sub help
 {
-    printf << "HELP", $VERSION 
+    printf << "HELP", $VERSION
 File and string checksum MD5 digester / verifier v%f
     $0 [OPTIONS] string1, string2, ...
     $0 -f [-o] file1, file2, ...
