@@ -9,15 +9,17 @@ use Digest::MD5;
 our $VERSION = 0.11;
 
 #flags
+my $verify;
+my $recurse;
 my $file;
 my $output;
-my $verify;
 my $help;
 
 my $output_file = 'checksums.md5';
 
 GetOptions(
            "verify|v" => \$verify,
+           "recursive|r" => \$recurse,
            "file|f"   => \$file,
            "output|o" => \$output,
            "help|h"   => \$help,
@@ -90,6 +92,12 @@ sub md5_files
 
     foreach (@filenames)
     {
+        if(-d)
+        {
+            push @filenames, glob "$_/*" if ($recurse);
+            next;
+        }
+
         say "$_ => ", md5_file($_);
     }
     select *STDOUT;
@@ -137,12 +145,13 @@ sub help
     printf << "HELP", $VERSION
 File and string checksum MD5 digester / verifier v%f
     $0 [OPTIONS] string1, string2, ...
-    $0 -f [-o] file1, file2, ...
+    $0 -f [-r -o] file1, file2, ...
     $0 -v checksum_file1, [checksum_file2, ...]
 
 Options:
     -f, --file        Digest files instead of strings
     -v, --verify      Verifies checksum file(s) in 'filename => checksum' format
+    -r, --recursive   Recurse into directories when using --file
     -o, --output      Outputs checksums to 'checksums.md5', must be used with -f
     -h, --help        Displays this message
 
