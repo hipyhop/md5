@@ -6,7 +6,7 @@ use 5.010;
 use Getopt::Long;
 use Digest::MD5;
 
-our $VERSION = 0.11;
+our $VERSION = 0.12;
 
 #flags
 my $verify;
@@ -67,11 +67,33 @@ sub md5_strings
     return 1;
 }
 
+sub open_output_file
+{
+    my ($filename) = @_;
+    my $OUTH = undef;
+    if( -e $filename )
+    {
+        print "$filename already exists, overwrite? [Y/N] : ";
+        chomp( my $response = <STDIN> );
+        if( $response =~ /[yY]/ )
+        {
+            open $OUTH, '>', $filename 
+                or die "Could not open $filename for writing\n";
+        }
+    }
+    return $OUTH;
+}
+
 #Digest multiple files
 sub md5_files
 {
     my @filenames = @_;
     my $hasher    = Digest::MD5->new;
+
+    eval{
+        my $OUTH = open_output_file( $output_file) if( $output );
+        select $OUTH if( defined $OUTH );
+    };
 
     if ($output)
     {
