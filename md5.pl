@@ -18,17 +18,17 @@ my $help;
 my $output_file = 'checksums.md5';
 
 GetOptions(
-           "verify|v" => \$verify,
+           "verify|v"    => \$verify,
            "recursive|r" => \$recurse,
-           "file|f"   => \$file,
-           "output|o" => \$output,
-           "help|h"   => \$help,
+           "file|f"      => \$file,
+           "output|o"    => \$output,
+           "help|h"      => \$help,
           ) or die "Error reading arguments\n";
 
 help() && exit 255 if $help;
 
 # Main program
-if (@ARGV > 0)
+if (scalar @ARGV > 0)
 {
     die "--output must be used with --file\n" if ($output && !$file);
 
@@ -71,14 +71,14 @@ sub open_output_file
 {
     my ($filename) = @_;
     my $OUTH = undef;
-    if( -e $filename )
+    if (-e $filename)
     {
         print "$filename already exists, overwrite? [Y/N] : ";
-        chomp( my $response = <STDIN> );
-        if( $response =~ /[yY]/ )
+        chomp(my $response = <STDIN>);
+        if ($response =~ /[yY]/)
         {
-            open $OUTH, '>', $filename 
-                or die "Could not open $filename for writing\n";
+            open $OUTH, '>', $filename
+              or die "Could not open $filename for writing\n";
         }
     }
     return $OUTH;
@@ -90,9 +90,9 @@ sub md5_files
     my @filenames = @_;
     my $hasher    = Digest::MD5->new;
 
-    eval{
-        my $OUTH = open_output_file( $output_file) if( $output );
-        select $OUTH if( defined $OUTH );
+    eval {
+        my $OUTH = open_output_file($output_file) if ($output);
+        select $OUTH if (defined $OUTH);
     };
 
     if ($output)
@@ -114,7 +114,7 @@ sub md5_files
 
     foreach (@filenames)
     {
-        if(-d)
+        if (-d)
         {
             push @filenames, glob "$_/*" if ($recurse);
             next;
@@ -143,22 +143,27 @@ sub md5_file
 
 sub verify
 {
-    my $seperator = '=>';
-    while (my $line = <>)
+    my @checksum_files = @_;
+    my $seperator      = '=>';
+    for my $file (@checksum_files)
     {
-        chomp $line;
-        next if ($line =~ /^#/);    #Skip lines with comments
+        open my $fh, '<', $file;
+        while (my $line = <$fh>)
+        {
+            chomp $line;
+            next if ($line =~ /^#/);    #Skip lines with comments
 
-        my ($filename, $checksum) = split /$seperator/, $line;
+            my ($filename, $checksum) = split /$seperator/, $line;
 
-        $checksum =~ s/ //g;        #Remove any spaces from checksum string
-        $filename =~ s/\s*$//;      #Remove any trailing spaces from filename
+            $checksum =~ s/ //g;      #Remove any spaces from checksum string
+            $filename =~ s/\s*$//;    #Remove any trailing spaces from filename
 
-        print "Checking '$filename' ... ";
-        my $result = md5_file($filename);
-        say $result eq $checksum
-          ? '[OK]'
-          : "[FAIL] expected $checksum got $result";
+            print "Checking '$filename' ... ";
+            my $result = md5_file($filename);
+            say $result eq $checksum
+              ? '[OK]'
+              : "[FAIL] expected $checksum got $result";
+        }
     }
 }
 
