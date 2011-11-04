@@ -2,6 +2,7 @@
 use strict;
 use warnings;
 
+
 use 5.010;
 use Getopt::Long;
 use Digest::MD5;
@@ -38,11 +39,11 @@ if (scalar @ARGV > 0)
     }
     elsif ($file)
     {
-        md5_files(@ARGV);
+        md5_files(\@ARGV);
     }
     else
     {
-        md5_strings(@ARGV);
+        md5_strings(\@ARGV);
     }
 }
 else
@@ -51,13 +52,15 @@ else
     exit 255;
 }
 
-#Digest multiple strings
+## @method md5_string ( ArrayRef strings )
+# Prints 'string => checksum' for each string in the array reference passed
+# @param strings Strings to be digested
 sub md5_strings
 {
-    my @strings = @_;
+    my ($strings) = @_;
     my $hasher  = Digest::MD5->new;
 
-    foreach (@strings)
+    foreach (@{$strings})
     {
         $hasher->add($_);
 
@@ -67,20 +70,27 @@ sub md5_strings
     return 1;
 }
 
+## @method open_output_file( String filename, Boolean overwrite )
+# Opens a write only filehandle to the given filename. If the file exists will prompt for specified action if not defined
+# @param filename Filename to open
+# @param overwrite Set true to overwrite, false to not overwrite or undef to prompt
+# @return A write only filehandle to the output file
 sub open_output_file
 {
-    my ($filename) = @_;
-    my $open       = 1;
+    my ($filename, $overwrite) = @_;
     my $OUTH       = undef;
 
     if (-e $filename)
     {
-        print "$filename already exists, overwrite? [Y/N] : ";
-        chomp(my $response = <STDIN>);
-        $open = 0 unless ($response =~ /[yY]/);
+        unless(defined $overwrite)
+        {
+            print "$filename already exists, overwrite? [Y/N] : ";
+            chomp(my $response = <STDIN>);
+            $overwrite = 1 if ($response =~ /[yY]/);
+        }
     }
 
-    if ($open)
+    if ($overwrite)
     {
         eval {
             open $OUTH, '>', $filename
@@ -94,10 +104,10 @@ sub open_output_file
 #Digest multiple files
 sub md5_files
 {
-    my @filenames = @_;
+    my ($filenames) = @_;
     my $hasher    = Digest::MD5->new;
 
-    if ($output)
+    if ($output) #TODO: remove all globals
     {
         my $OUTH = open_output_file($output_file);
         if (defined $OUTH)
@@ -111,11 +121,11 @@ sub md5_files
         }
     }
 
-    for (@filenames)
+    for (@{$filenames})
     {
         if (-d)
         {
-            push @filenames, glob "$_/*" if ($recurse);
+            push @{$filenames}, glob "$_/*" if ($recurse);
             next;
         }
 
