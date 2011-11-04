@@ -2,7 +2,6 @@
 use strict;
 use warnings;
 
-
 use 5.010;
 use Getopt::Long;
 use Digest::MD5;
@@ -58,7 +57,7 @@ else
 sub md5_strings
 {
     my ($strings) = @_;
-    my $hasher  = Digest::MD5->new;
+    my $hasher = Digest::MD5->new;
 
     foreach (@{$strings})
     {
@@ -78,12 +77,12 @@ sub md5_strings
 sub open_output_file
 {
     my ($filename, $overwrite) = @_;
-    my $OUTH       = undef;
+    my $OUTH = undef;
 
     my $file_exist = -e $filename;
     if ($file_exist)
     {
-        unless(defined $overwrite)
+        unless (defined $overwrite)
         {
             print "$filename already exists, overwrite? [Y/N] : ";
             chomp(my $response = <STDIN>);
@@ -106,9 +105,9 @@ sub open_output_file
 sub md5_files
 {
     my ($filenames) = @_;
-    my $hasher    = Digest::MD5->new;
+    my $hasher = Digest::MD5->new;
 
-    if ($output) #TODO: remove all globals
+    if ($output)    #TODO: remove all globals
     {
         my $OUTH = open_output_file($output_file);
         if (defined $OUTH)
