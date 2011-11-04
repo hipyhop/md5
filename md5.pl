@@ -80,17 +80,18 @@ sub open_output_file
     my ($filename, $overwrite) = @_;
     my $OUTH       = undef;
 
-    if (-e $filename)
+    my $file_exist = -e $filename;
+    if ($file_exist)
     {
         unless(defined $overwrite)
         {
             print "$filename already exists, overwrite? [Y/N] : ";
             chomp(my $response = <STDIN>);
-            $overwrite = 1 if ($response =~ /[yY]/);
+            $overwrite = 1 if ($response =~ /[^y]/i);
         }
     }
 
-    if ($overwrite)
+    if (!$file_exist or $overwrite)
     {
         eval {
             open $OUTH, '>', $filename
