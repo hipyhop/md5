@@ -86,16 +86,17 @@ sub open_output_file
         {
             print "$filename already exists, overwrite? [Y/N] : ";
             chomp(my $response = <STDIN>);
-            $overwrite = 1 if ($response =~ /[^y]/i);
+            $overwrite = 1 if ($response =~ /^y/i);
         }
     }
 
-    if (!$file_exist or $overwrite)
+    if (!$file_exist || $overwrite)
     {
         eval {
             open $OUTH, '>', $filename
               or die "Could not open $filename for writing\n";
         };
+        print "Could not open $filename for writing, Printing to stdout instead: $@" if $@;
     }
 
     return $OUTH;
