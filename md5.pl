@@ -8,48 +8,55 @@ use Digest::MD5;
 
 our $VERSION = 0.13;
 
-#flags
-my $verify;
-my $recurse;
-my $file;
-my $output;
-my $help;
+run();
 
-my $output_file = 'checksums.md5';
-
-GetOptions(
-           "verify|v"    => \$verify,
-           "recursive|r" => \$recurse,
-           "file|f"      => \$file,
-           "output|o"    => \$output,
-           "help|h"      => \$help,
-          ) or die "Error reading arguments\n";
-
-help() && exit 255 if $help;
-
-# Main program
-if (scalar @ARGV > 0)
+sub run
 {
-    die "--output must be used with --file\n" if ($output && !$file);
-
-    if ($verify)
+    my $settings = get_settings();
+    if (defined $$settings{output} && !defined $$settings{file})
     {
-        verify(@ARGV);
+        die "--output must be used with --file\n";
     }
-    elsif ($file)
+
+    help() if(defined $$settings{help});
+
+    if (@ARGV)
     {
-        md5_files(\@ARGV);
+        if ($$settings{verify})
+        {
+            verify(@ARGV);
+        }
+        elsif ($$settings{file})
+        {
+            md5_files(\@ARGV, $$settings{recursive}, $$settings{output}, $$settings{output_file});
+        }
+        else
+        {
+            md5_strings(\@ARGV);
+        }
     }
     else
     {
-        md5_strings(\@ARGV);
+        help();
+        exit 1;
     }
+
 }
-else
+
+sub get_settings
 {
-    help();
-    exit 255;
+    my $settings = {};
+    GetOptions($settings,
+           'verify|v', 
+           'recursive|r',
+           'file|f',
+           'output|o',
+           'help|h',
+          ) or die "Error reading arguments\n";
+    $$settings{output_file} = 'checksums.md5';
+    return $settings;
 }
+
 
 ## @method md5_string ( ArrayRef strings )
 # Prints 'string => checksum' for each string in the array reference passed
@@ -105,10 +112,10 @@ sub open_output_file
 #Digest multiple files
 sub md5_files
 {
-    my ($filenames) = @_;
-    my $hasher = Digest::MD5->new;
+    my ($filenames, $recurse, $output, $output_file) = @_;
+    my $hasher = Digest::MD5->new();
 
-    if ($output)    #TODO: remove all globals
+    if ($output) 
     {
         my $OUTH = open_output_file($output_file);
         if (defined $OUTH)
