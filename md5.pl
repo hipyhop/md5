@@ -6,9 +6,20 @@ use 5.010;
 use Getopt::Long;
 use Digest::MD5;
 
-our $VERSION = 0.13;
+our $VERSION = 0.14;
+
+
+# TODO: Update build_printer to produce code that takes an output filehandle, defaults to STDOUT(04/12/2011)
 
 run();
+
+sub build_printer
+{
+    my ($format, $handle) = @_;
+    $handle = *STDOUT unless defined $handle;
+    my $printer = sub{ printf $handle "$format\n", @_ };
+    return $printer;
+}
 
 sub run
 {
@@ -22,17 +33,22 @@ sub run
 
     if (@ARGV)
     {
+        #TODO: Swap this for build_printer once complete
+        my $format = $settings->{format};
+        my $printer = $format ? sub{ printf "$format\n", $_[0], $_[1] } : 
+                            sub{ say "$_[0] => $_[1]" };
+
         if ($$settings{verify})
         {
             verify(@ARGV);
         }
         elsif ($$settings{file})
         {
-            md5_files(\@ARGV, $$settings{recursive}, $$settings{output}, $$settings{output_file});
+            md5_files(\@ARGV, $printer, $$settings{recursive}, $$settings{output}, $$settings{output_file});
         }
         else
         {
-            md5_strings(\@ARGV);
+            md5_strings(\@ARGV, $printer);
         }
     }
     else
@@ -40,9 +56,11 @@ sub run
         help();
         exit 1;
     }
-
 }
 
+## @method HashRef get_settings()
+# Parse the command line arguments into a settings hash
+# @return A Hash Reference containing the parsed arguments
 sub get_settings
 {
     my $settings = {};
@@ -51,6 +69,7 @@ sub get_settings
            'recursive|r',
            'file|f',
            'output|o',
+           'format:s',
            'help|h',
           ) or die "Error reading arguments\n";
     $$settings{output_file} = 'checksums.md5';
@@ -58,20 +77,19 @@ sub get_settings
 }
 
 
-## @method md5_string ( ArrayRef strings )
+## @method md5_string ( ArrayRef strings, CodeRef printer)
 # Prints 'string => checksum' for each string in the array reference passed
 # @param strings Strings to be digested
+# @param printer A code reference that takes two arguments( string/filename, MD5Hash) and prints output
 sub md5_strings
 {
-    my ($strings) = @_;
+    my ($strings, $printer) = @_;
     my $hasher = Digest::MD5->new;
 
     foreach (@{$strings})
     {
         $hasher->add($_);
-
-        #print hex digest and clear for next $val
-        say "$_ => ", $hasher->hexdigest;
+        $printer->($_, $hasher->hexdigest);
     }
     return 1;
 }
@@ -112,7 +130,7 @@ sub open_output_file
 #Digest multiple files
 sub md5_files
 {
-    my ($filenames, $recurse, $output, $output_file) = @_;
+    my ($filenames, $printer, $recurse, $output, $output_file) = @_;
     my $hasher = Digest::MD5->new();
 
     if ($output) 
