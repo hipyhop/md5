@@ -8,7 +8,6 @@ use Digest::MD5;
 
 our $VERSION = 0.14;
 
-
 # TODO: Update build_printer to produce code that takes an output filehandle, defaults to STDOUT(04/12/2011)
 
 run();
@@ -17,7 +16,7 @@ sub build_printer
 {
     my ($format, $handle) = @_;
     $handle = *STDOUT unless defined $handle;
-    my $printer = sub{ printf $handle "$format\n", @_ };
+    my $printer = sub { printf $handle "$format\n", @_ };
     return $printer;
 }
 
@@ -29,14 +28,17 @@ sub run
         die "--output must be used with --file\n";
     }
 
-    help() if(defined $$settings{help});
+    help() if (defined $$settings{help});
 
     if (@ARGV)
     {
+
         #TODO: Swap this for build_printer once complete
         my $format = $settings->{format};
-        my $printer = $format ? sub{ printf "$format\n", $_[0], $_[1] } : 
-                            sub{ say "$_[0] => $_[1]" };
+        my $printer =
+          $format
+          ? sub { printf "$format\n", $_[0], $_[1] }
+          : sub { say "$_[0] => $_[1]" };
 
         if ($$settings{verify})
         {
@@ -44,7 +46,8 @@ sub run
         }
         elsif ($$settings{file})
         {
-            md5_files(\@ARGV, $printer, $$settings{recursive}, $$settings{output}, $$settings{output_file});
+            md5_files(\@ARGV, $printer, $$settings{recursive},
+                      $$settings{output}, $$settings{output_file});
         }
         else
         {
@@ -64,18 +67,13 @@ sub run
 sub get_settings
 {
     my $settings = {};
-    GetOptions($settings,
-           'verify|v', 
-           'recursive|r',
-           'file|f',
-           'output|o',
-           'format:s',
-           'help|h',
-          ) or die "Error reading arguments\n";
+    GetOptions(
+               $settings,  'verify|v', 'recursive|r', 'file|f',
+               'output|o', 'format:s', 'help|h',
+              ) or die "Error reading arguments\n";
     $$settings{output_file} = 'checksums.md5';
     return $settings;
 }
-
 
 ## @method md5_string ( ArrayRef strings, CodeRef printer)
 # Prints 'string => checksum' for each string in the array reference passed
@@ -121,7 +119,9 @@ sub open_output_file
             open $OUTH, '>', $filename
               or die "Could not open $filename for writing\n";
         };
-        print "Could not open $filename for writing, Printing to stdout instead: $@" if $@;
+        print
+          "Could not open $filename for writing, Printing to stdout instead: $@"
+          if $@;
     }
 
     return $OUTH;
@@ -133,7 +133,7 @@ sub md5_files
     my ($filenames, $printer, $recurse, $output, $output_file) = @_;
     my $hasher = Digest::MD5->new();
 
-    if ($output) 
+    if ($output)
     {
         my $OUTH = open_output_file($output_file);
         if (defined $OUTH)
