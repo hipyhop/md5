@@ -16,29 +16,31 @@ sub build_printer
 {
     my ($format, $handle) = @_;
     $handle = *STDOUT unless defined $handle;
-    my $printer = sub { printf $handle "$format\n", @_ };
+    my $printer;
+    if ($format)
+    {
+        my $printer = sub { printf $handle "$format\n", @_ };
+    }
+    else
+    {
+        $printer = sub { say $handle "$_[0] => $_[1]" };
+    }
     return $printer;
 }
 
 sub run
 {
     my $settings = get_settings();
-    if (defined $$settings{output} && !defined $$settings{file})
-    {
-        die "--output must be used with --file\n";
-    }
 
     help() if (defined $$settings{help});
 
     if (@ARGV)
     {
-
-        #TODO: Swap this for build_printer once complete
-        my $format = $settings->{format};
-        my $printer =
-          $format
-          ? sub { printf "$format\n", $_[0], $_[1] }
-          : sub { say "$_[0] => $_[1]" };
+        my $handle =
+          $$settings{output}
+          ? open_output_file($$settings{output_file})
+          : undef;
+        my $printer = build_printer($$settings{format}, $handle);
 
         if ($$settings{verify})
         {
@@ -46,8 +48,7 @@ sub run
         }
         elsif ($$settings{file})
         {
-            md5_files(\@ARGV, $printer, $$settings{recursive},
-                      $$settings{output}, $$settings{output_file});
+            md5_files(\@ARGV, $printer, $$settings{recursive});
         }
         else
         {
@@ -119,33 +120,18 @@ sub open_output_file
             open $OUTH, '>', $filename
               or die "Could not open $filename for writing\n";
         };
-        print
+        print STDERR
           "Could not open $filename for writing, Printing to stdout instead: $@"
           if $@;
     }
-
     return $OUTH;
 }
 
 #Digest multiple files
 sub md5_files
 {
-    my ($filenames, $printer, $recurse, $output, $output_file) = @_;
+    my ($filenames, $printer, $recurse) = @_;
     my $hasher = Digest::MD5->new();
-
-    if ($output)
-    {
-        my $OUTH = open_output_file($output_file);
-        if (defined $OUTH)
-        {
-            select $OUTH;
-            printf(
-                "#Checksum file created on %02d/%02d/%02d\n",
-                sub { ($_[3], $_[4] + 1, $_[5] + 1900) }
-                  ->(localtime)
-            );
-        }
-    }
 
     for (@{$filenames})
     {
@@ -154,12 +140,8 @@ sub md5_files
             push @{$filenames}, glob "$_/*" if ($recurse);
             next;
         }
-
-        say "$_ => ", md5_file($_);
+        $printer->($_, md5_file($_));
     }
-
-    select *STDOUT;
-    return 1;
 }
 
 sub md5_file
@@ -167,7 +149,7 @@ sub md5_file
     my ($file, $return) = @_;
     if (!open(my $FH, "<", $file))
     {
-        $return = "Error opening file";
+        $return = "!!! Error opening file !!!";
     }
     else
     {
