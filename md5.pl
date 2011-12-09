@@ -19,7 +19,6 @@ sub build_printer
     my $printer;
     if ($format)
     {
-        my $printer = sub { printf $handle "$format\n", @_ };
     }
     else
     {
