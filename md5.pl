@@ -10,22 +10,6 @@ our $VERSION = 0.15;
 
 run();
 
-sub build_printer
-{
-    my ($format, $handle) = @_;
-    $handle = *STDOUT unless defined $handle;
-    my $printer;
-    if ($format)
-    {
-        $printer = sub { printf $handle "$format\n", @_ };
-    }
-    else
-    {
-        $printer = sub { say $handle "$_[0] => $_[1]" };
-    }
-    return $printer;
-}
-
 sub run
 {
     my $settings = get_settings();
@@ -67,10 +51,9 @@ sub run
 sub get_settings
 {
     my $settings = {};
-    GetOptions(
-               $settings,  'verify|v', 'recursive|r', 'file|f',
-               'output|o', 'out_file:s', 'format:s', 'help|h',
-              ) or die "Error reading arguments\n";
+    GetOptions($settings, 'verify|v', 'recursive|r', 'file|f', 'output|o',
+               'out_file:s', 'format:s', 'help|h',)
+      or die "Error reading arguments\n";
     $$settings{out_file} = 'checksums.md5' unless defined $$settings{out_file};
     return $settings;
 }
@@ -182,6 +165,29 @@ sub verify
               : "[FAIL] expected $checksum got $result";
         }
     }
+}
+
+## @method CodeRef build_print( String format, FileHandle handle)
+# Builds a printer function using the optional printf style format
+# and outputs to the optional filehandle
+# @param format [Optional] A printf style format which will have a newline
+#                          appened to it, Default: %s => %s
+# @param handle [Optional] A filehandle to output to, Default: STDOUT
+# @return a CodeRef that will print formatted input to the specified output
+sub build_printer
+{
+    my ($format, $handle) = @_;
+    $handle = *STDOUT unless defined $handle;
+    my $printer;
+    if ($format)
+    {
+        $printer = sub { printf $handle "$format\n", @_ };
+    }
+    else
+    {
+        $printer = sub { say $handle "$_[0] => $_[1]" };
+    }
+    return $printer;
 }
 
 sub help
