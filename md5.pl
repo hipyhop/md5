@@ -6,9 +6,7 @@ use 5.010;
 use Getopt::Long;
 use Digest::MD5;
 
-our $VERSION = 0.14;
-
-# TODO: Update build_printer to produce code that takes an output filehandle, defaults to STDOUT(04/12/2011)
+our $VERSION = 0.15;
 
 run();
 
@@ -19,6 +17,7 @@ sub build_printer
     my $printer;
     if ($format)
     {
+        $printer = sub { printf $handle "$format\n", @_ };
     }
     else
     {
@@ -37,8 +36,9 @@ sub run
     {
         my $handle =
           $$settings{output}
-          ? open_output_file($$settings{output_file})
+          ? open_output_file($$settings{out_file})
           : undef;
+
         my $printer = build_printer($$settings{format}, $handle);
 
         if ($$settings{verify})
@@ -69,9 +69,9 @@ sub get_settings
     my $settings = {};
     GetOptions(
                $settings,  'verify|v', 'recursive|r', 'file|f',
-               'output|o', 'format:s', 'help|h',
+               'output|o', 'out_file:s', 'format:s', 'help|h',
               ) or die "Error reading arguments\n";
-    $$settings{output_file} = 'checksums.md5';
+    $$settings{out_file} = 'checksums.md5' unless defined $$settings{out_file};
     return $settings;
 }
 
@@ -197,6 +197,11 @@ Options:
     -v, --verify      Verifies checksum file(s) in 'filename => checksum' format
     -r, --recursive   Recurse into directories when using --file
     -o, --output      Outputs checksums to 'checksums.md5', must be used with -f
+        --out-file    The filename to output the results to
+        --format      Printf style custom format that takes two string arguments,
+                      the string/filename and the checksum. A new line will be 
+                      added to the format string
+
     -h, --help        Displays this message
 
 HELP
