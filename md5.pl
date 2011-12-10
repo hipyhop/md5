@@ -126,6 +126,10 @@ sub md5_files
     }
 }
 
+## @method String md5_file( String filename )
+# Computes the MD5 Checksum of the supplied filename
+# @param filename [NOT undef] The filename to read
+# @return MD5 checksum of the filename or an error message
 sub md5_file
 {
     my ($file, $return) = @_;
@@ -190,6 +194,8 @@ sub build_printer
     return $printer;
 }
 
+## @method void help()
+# Prints help text
 sub help
 {
     printf << "HELP", $VERSION
