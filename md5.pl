@@ -109,7 +109,12 @@ sub open_output_file
     return $OUTH;
 }
 
-#Digest multiple files
+## @method void md5_files( ArrayRef filesnames, CodeRef printer, Boolean recurse )
+# Takes a list of filenames and computes the MD5 checksums and passes them to 
+# the printer Code reference.
+# @param filenames A list of filesnames to process, relative or absolute.
+# @param printer [NOT undef] A code reference that takes 2 arguments, the filename and the MD5 checksum
+# @param recurse [Optional] If true will recurse into any directories passed as filenames
 sub md5_files
 {
     my ($filenames, $printer, $recurse) = @_;
