@@ -10,6 +10,7 @@ require_ok('Digest::MD5');
 test1();
 test2();
 test3();
+test4();
 
 # Test1 - Checks md5 checksum of string 'test' matches known checksum
 sub test1
@@ -113,6 +114,17 @@ sub test3
 
     #cleanup files after testing
     remove_files($CHECKSUM_FILE, $junkfile1, $junkfile2);
+}
+
+# Test --format option
+sub test4
+{
+    my $testname = 'test --format \'%s:%s\'';
+    chomp(my $output = `perl md5.pl --format '%s:%s' test`);
+    my $expected = 'test:098f6bcd4621d373cade4e832627b4f6';
+    ok($output eq $expected, '--format test 1 passed');
+    
+    
 }
 
 #create a random textfile
