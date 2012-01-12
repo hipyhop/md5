@@ -123,8 +123,7 @@ sub test4
     chomp(my $output = `perl md5.pl --format '%s:%s' test`);
     my $expected = 'test:098f6bcd4621d373cade4e832627b4f6';
     ok($output eq $expected, '--format test 1 passed');
-    
-    
+
 }
 
 #create a random textfile

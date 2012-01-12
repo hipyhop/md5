@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-use 5.010;
+use 5.010100;
 use Getopt::Long;
 use Digest::MD5;
 
@@ -16,7 +16,18 @@ sub run
 
     help() if (defined $$settings{help});
 
-    if (@ARGV)
+    #my $in_list = (scalar @ARGV) ? \@ARGV : \*STDIN;
+    my $in_list;
+    if (scalar(@ARGV))
+    {
+        $in_list = \@ARGV;
+    }
+    else
+    {
+        chomp(@$in_list = <STDIN>);
+    }
+
+    if (defined $in_list)
     {
         my $handle =
           $$settings{output}
@@ -27,15 +38,15 @@ sub run
 
         if ($$settings{verify})
         {
-            verify(@ARGV);
+            verify($in_list);
         }
         elsif ($$settings{file})
         {
-            md5_files(\@ARGV, $printer, $$settings{recursive});
+            md5_files($in_list, $printer, $$settings{recursive});
         }
         else
         {
-            md5_strings(\@ARGV, $printer);
+            md5_strings($in_list, $printer);
         }
     }
     else
@@ -110,7 +121,7 @@ sub open_output_file
 }
 
 ## @method void md5_files( ArrayRef filesnames, CodeRef printer, Boolean recurse )
-# Takes a list of filenames and computes the MD5 checksums and passes them to 
+# Takes a list of filenames and computes the MD5 checksums and passes them to
 # the printer Code reference.
 # @param filenames A list of filesnames to process, relative or absolute.
 # @param printer [NOT undef] A code reference that takes 2 arguments, the filename and the MD5 checksum
@@ -152,9 +163,9 @@ sub md5_file
 
 sub verify
 {
-    my @checksum_files = @_;
-    my $seperator      = '=>';
-    for my $file (@checksum_files)
+    my ($checksum_files) = @_;
+    my $seperator = '=>';
+    for my $file (@$checksum_files)
     {
         open my $fh, '<', $file;
         while (my $line = <$fh>)
