@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-use 5.010100;
+use 5.010;
 use Getopt::Long;
 use Digest::MD5;
 
@@ -24,7 +24,7 @@ sub run
     }
     else
     {
-        chomp(@$in_list = <STDIN>);
+        $in_list = \*STDIN;
     }
 
     if (defined $in_list)
@@ -78,10 +78,24 @@ sub md5_strings
     my ($strings, $printer) = @_;
     my $hasher = Digest::MD5->new;
 
-    foreach (@{$strings})
+    my $runner = sub{
+        my ($str) = @_;
+        $hasher->add($str);
+        $printer->($str, $hasher->hexdigest);
+    };
+    
+    if(ref $strings eq 'ARRAY')
     {
-        $hasher->add($_);
-        $printer->($_, $hasher->hexdigest);
+        foreach (@{$strings})
+        {
+            $runner->($_);
+        }
+    }
+    elsif(ref $strings eq 'GLOB'){
+        while(<$strings>){
+            chomp;
+            $runner->($_);
+        }
     }
     return 1;
 }
