@@ -6,7 +6,7 @@ use 5.010;
 use Getopt::Long;
 use Digest::MD5;
 
-our $VERSION = 0.15;
+our $VERSION = 0.16;
 
 run();
 
@@ -16,7 +16,6 @@ sub run
 
     help() if (defined $$settings{help});
 
-    #my $in_list = (scalar @ARGV) ? \@ARGV : \*STDIN;
     my $in_list;
     if (scalar(@ARGV))
     {
@@ -69,35 +68,36 @@ sub get_settings
     return $settings;
 }
 
-## @method md5_string ( ArrayRef strings, CodeRef printer)
-# Prints 'string => checksum' for each string in the array reference passed
-# @param strings Strings to be digested
+## @method md5_string ( mixed strings, CodeRef printer)
+# Digests the strings from the first parameter and prints them using the printer->() code ref
+# @param strings An ArrayRef of strings to be digested OR a file GLOB to read strings from
 # @param printer A code reference that takes two arguments( string/filename, MD5Hash) and prints output
 sub md5_strings
 {
     my ($strings, $printer) = @_;
     my $hasher = Digest::MD5->new;
 
-    my $runner = sub{
+    my $runner = sub {
         my ($str) = @_;
         $hasher->add($str);
         $printer->($str, $hasher->hexdigest);
     };
-    
-    if(ref $strings eq 'ARRAY')
+
+    if (ref $strings eq 'ARRAY')
     {
         foreach (@{$strings})
         {
             $runner->($_);
         }
     }
-    elsif(ref $strings eq 'GLOB'){
-        while(<$strings>){
+    elsif (ref $strings eq 'GLOB')
+    {
+        while (<$strings>)
+        {
             chomp;
             $runner->($_);
         }
     }
-    return 1;
 }
 
 ## @method open_output_file( String filename, Boolean overwrite )
@@ -134,10 +134,10 @@ sub open_output_file
     return $OUTH;
 }
 
-## @method void md5_files( ArrayRef filesnames, CodeRef printer, Boolean recurse )
+## @method void md5_files( mixed filesnames, CodeRef printer, Boolean recurse )
 # Takes a list of filenames and computes the MD5 checksums and passes them to
 # the printer Code reference.
-# @param filenames A list of filesnames to process, relative or absolute.
+# @param filenames An Array reference to an array of filesnames OR a file Glob containing a filename on each line, relative or absolute.
 # @param printer [NOT undef] A code reference that takes 2 arguments, the filename and the MD5 checksum
 # @param recurse [Optional] If true will recurse into any directories passed as filenames
 sub md5_files
@@ -145,14 +145,35 @@ sub md5_files
     my ($filenames, $printer, $recurse) = @_;
     my $hasher = Digest::MD5->new();
 
-    for (@{$filenames})
+    my $runner = sub {
+        my ($filename) = @_;
+        $printer->($filename, md5_file($filename));
+    };
+
+    if (ref $filenames eq 'ARRAY')
     {
-        if (-d)
+        for (@{$filenames})
         {
-            push @{$filenames}, glob "$_/*" if ($recurse);
-            next;
+            if (-d)
+            {
+                push @{$filenames}, glob "$_/*" if $recurse;
+                next;
+            }
+            $runner->($_);
         }
-        $printer->($_, md5_file($_));
+    }
+    elsif (ref $filenames eq 'GLOB')
+    {
+        while (<$filenames>)
+        {
+            chomp;
+            if (-d)
+            {
+                md5_files([$_], $printer, $recurse) if $recurse;
+                next;
+            }
+            $runner->($_);
+        }
     }
 }
 
@@ -175,6 +196,9 @@ sub md5_file
     return $return;
 }
 
+## @method verify( ArrayRef filenames );
+# Verifies the checksums found in a file. Currently only supports file format 'filename => checksum'.
+# @param filenames A list of filenames to read filename/checksum pairs from and verify 
 sub verify
 {
     my ($checksum_files) = @_;
@@ -188,7 +212,6 @@ sub verify
             next if ($line =~ /^#/);    #Skip lines with comments
 
             my ($filename, $checksum) = split /$seperator/, $line;
-
             $checksum =~ s/ //g;      #Remove any spaces from checksum string
             $filename =~ s/\s*$//;    #Remove any trailing spaces from filename
 
