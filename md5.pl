@@ -14,34 +14,26 @@ sub run
 {
     my $settings = get_settings();
 
-    help() if (defined $$settings{help});
+    help() if defined $settings->{help};
 
-    my $in_list;
-    if (scalar(@ARGV))
-    {
-        $in_list = \@ARGV;
-    }
-    else
-    {
-        $in_list = \*STDIN;
-    }
+    my $in_list = scalar @ARGV ? \@ARGV : \*STDIN;
 
     if (defined $in_list)
     {
         my $handle =
-          $$settings{output}
-          ? open_output_file($$settings{out_file})
+          $settings->{output}
+          ? open_output_file($settings->{out_file})
           : undef;
 
-        my $printer = build_printer($$settings{format}, $handle);
+        my $printer = build_printer($settings->{format}, $handle);
 
-        if ($$settings{verify})
+        if ($settings->{verify})
         {
             verify($in_list);
         }
-        elsif ($$settings{file})
+        elsif ($settings->{file})
         {
-            md5_files($in_list, $printer, $$settings{recursive});
+            md5_files($in_list, $printer, $settings->{recursive});
         }
         else
         {
@@ -53,6 +45,7 @@ sub run
         help();
         exit 1;
     }
+    return 1;
 }
 
 ## @method HashRef get_settings()
@@ -64,7 +57,8 @@ sub get_settings
     GetOptions($settings, 'verify|v', 'recursive|r', 'file|f', 'output|o',
                'out_file:s', 'format:s', 'help|h',)
       or die "Error reading arguments\n";
-    $$settings{out_file} = 'checksums.md5' unless defined $$settings{out_file};
+    $settings->{out_file} = 'checksums.md5'
+      unless defined $settings->{out_file};
     return $settings;
 }
 
@@ -98,6 +92,7 @@ sub md5_strings
             $runner->($_);
         }
     }
+    return 1;
 }
 
 ## @method open_output_file( String filename, Boolean overwrite )
@@ -113,7 +108,7 @@ sub open_output_file
     my $file_exist = -e $filename;
     if ($file_exist)
     {
-        unless (defined $overwrite)
+        if (!defined $overwrite)
         {
             print "$filename already exists, overwrite? [Y/N] : ";
             chomp(my $response = <STDIN>);
@@ -175,6 +170,7 @@ sub md5_files
             $runner->($_);
         }
     }
+    return 1;
 }
 
 ## @method String md5_file( String filename )
@@ -198,7 +194,7 @@ sub md5_file
 
 ## @method verify( ArrayRef filenames );
 # Verifies the checksums found in a file. Currently only supports file format 'filename => checksum'.
-# @param filenames A list of filenames to read filename/checksum pairs from and verify 
+# @param filenames A list of filenames to read filename/checksum pairs from and verify
 sub verify
 {
     my ($checksum_files) = @_;
@@ -222,6 +218,7 @@ sub verify
               : "[FAIL] expected $checksum got $result";
         }
     }
+    return 1;
 }
 
 ## @method CodeRef build_print( String format, FileHandle handle)
@@ -251,8 +248,8 @@ sub build_printer
 # Prints help text
 sub help
 {
-    printf << "HELP", $VERSION
-File and string checksum MD5 digester / verifier v%f
+    printf << "HELP", $VERSION;
+File and string checksum MD5 digester / verifier v%.2f
     $0 [OPTIONS] string1, string2, ...
     $0 -f [-r -o] file1, file2, ...
     $0 -v checksum_file1, [checksum_file2, ...]
@@ -263,11 +260,12 @@ Options:
     -r, --recursive   Recurse into directories when using --file
     -o, --output      Outputs checksums to 'checksums.md5', must be used with -f
         --out-file    The filename to output the results to
-        --format      Printf style custom format that takes two string arguments,
+        --format      Printf style custom format that takes 2 %string arguments,
                       the string/filename and the checksum. A new line will be 
                       added to the format string
 
     -h, --help        Displays this message
 
 HELP
+    exit;
 }
