@@ -201,11 +201,16 @@ sub verify
     my $seperator = '=>';
     for my $file (@$checksum_files)
     {
-        open my $fh, '<', $file;
+        my $success = open my $fh, '<', $file;
+        if (!$success)
+        {
+            print STDERR "Failed to open $file for reading\n";
+            next;
+        }
         while (my $line = <$fh>)
         {
             chomp $line;
-            next if ($line =~ /^#/);    #Skip lines with comments
+            next if $line =~ /^#/;    #Skip lines with comments
 
             my ($filename, $checksum) = split /$seperator/, $line;
             $checksum =~ s/ //g;      #Remove any spaces from checksum string
@@ -217,6 +222,7 @@ sub verify
               ? '[OK]'
               : "[FAIL] expected $checksum got $result";
         }
+        close $fh;
     }
     return 1;
 }
