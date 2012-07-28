@@ -6,7 +6,7 @@ use 5.010;
 use Getopt::Long;
 use Digest::MD5;
 
-our $VERSION = 0.16;
+our $VERSION = 0.17;
 
 run();
 
@@ -16,10 +16,10 @@ sub run
 
     help() if defined $settings->{help};
 
-    my $in_list = scalar @ARGV ? \@ARGV : \*STDIN;
-
-    if (defined $in_list)
+    if (defined $ARGV[0])
     {
+        my $input = $ARGV[0] eq '-' ? \*STDIN : \@ARGV;
+
         my $handle =
           $settings->{output}
           ? open_output_file($settings->{out_file})
@@ -29,15 +29,15 @@ sub run
 
         if ($settings->{verify})
         {
-            verify($in_list);
+            verify($input);
         }
         elsif ($settings->{file})
         {
-            md5_files($in_list, $printer, $settings->{recursive});
+            md5_files($input, $printer, $settings->{recursive});
         }
         else
         {
-            md5_strings($in_list, $printer);
+            md5_strings($input, $printer);
         }
     }
     else
@@ -254,8 +254,8 @@ sub build_printer
 # Prints help text
 sub help
 {
-    printf << "HELP", $VERSION;
-File and string checksum MD5 digester / verifier v%.2f
+    print << "HELP";
+File and string checksum MD5 digester / verifier v$VERSION
     $0 [OPTIONS] string1, string2, ...
     $0 -f [-r -o] file1, file2, ...
     $0 -v checksum_file1, [checksum_file2, ...]
