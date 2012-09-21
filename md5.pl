@@ -5,8 +5,9 @@ use warnings;
 use 5.010;
 use Getopt::Long;
 use Digest::MD5;
+use File::Spec;
 
-our $VERSION = 0.17;
+our $VERSION = 0.18;
 
 run();
 
@@ -129,12 +130,19 @@ sub md5_files {
     };
 
     if ( ref $filenames eq 'ARRAY' ) {
-        for ( @{$filenames} ) {
-            if (-d) {
-                push @{$filenames}, glob "$_/*" if $recurse;
+        while ( my $filename = shift @{$filenames} ) {
+            if ( -d $filename ) {
+                if ($recurse) {
+                    opendir( my $dh, $filename )
+                      || warn "Failed to open directory $filename: $!\n";
+                    my @dirs =
+                      map { File::Spec->join( $filename, $_ ) }
+                      File::Spec->no_upwards( readdir($dh) );
+                    unshift @{$filenames}, @dirs;
+                }
                 next;
             }
-            $runner->($_);
+            $runner->($filename);
         }
     }
     elsif ( ref $filenames eq 'GLOB' ) {
