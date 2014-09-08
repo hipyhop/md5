@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-use 5.010;
+use v5.6.0;
 use Getopt::Long;
 use Digest::MD5;
 use File::Spec;
@@ -241,7 +241,7 @@ Options:
     -o, --output      Outputs checksums to 'checksums.md5', must be used with -f
         --out-file    The filename to output the results to
         --format      Printf style custom format that takes 2 %string arguments,
-                      the string/filename and the checksum. A new line will be 
+                      the string/filename and the checksum. A new line will be
                       added to the format string
 
     -h, --help        Displays this message
