@@ -9,7 +9,7 @@ use File::Spec;
 
 our $VERSION = 0.18;
 
-run();
+__PACKAGE__->run() unless caller;
 
 sub run {
     my $settings = get_settings();
