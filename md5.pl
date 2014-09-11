@@ -126,7 +126,7 @@ sub md5_files {
 
     my $runner = sub {
         my ($filename) = @_;
-        $printer->( $filename, md5_file($filename) );
+        $printer->( $filename, md5_file( $filename, $hasher ) );
     };
 
     if ( ref $filenames eq 'ARRAY' ) {
@@ -158,17 +158,23 @@ sub md5_files {
     return 1;
 }
 
-## @method String md5_file( String filename )
+## @method String md5_file( String filename, Digest::MD5 hasher )
 # Computes the MD5 Checksum of the supplied filename
 # @param filename [NOT undef] The filename to read
+# @param hasher Optional. a Digest::MD5 instance to use to generate hashes.
+#   If not given, one will be generated and forgotten about.
 # @return MD5 checksum of the filename or an error message
 sub md5_file {
-    my ( $file, $return ) = @_;
+    my ( $file, $hasher ) = @_;
+    my $return;
     if ( !open( my $FH, "<", $file ) ) {
         $return = "!!! Error opening file !!!";
     }
     else {
-        $return = Digest::MD5->new->addfile($FH)->hexdigest;
+        if ( !defined $hasher ) {
+            $hasher = Digest::MD5->new;
+        }
+        $return = $hasher->addfile($FH)->hexdigest;
         close $FH;
     }
     return $return;
