@@ -196,9 +196,11 @@ sub verify {
 
             print "Checking '$filename' ... ";
             my $result = md5_file($filename);
-            say $result eq $checksum
-              ? '[OK]'
-              : "[FAIL] expected $checksum got $result";
+            if ( $result eq $checksum ) {
+                print "[OK]\n";
+            } else {
+                print "[FAIL] expected '$checksum' got '$result'\n";
+            }
         }
         close $fh;
     }
